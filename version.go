@@ -67,12 +67,22 @@ func (info Info) Text() string {
 	return table.String()
 }
 
+// getEffectiveVersion 返回有效的版本号（优先返回动态版本）
+func getEffectiveVersion() string {
+	if val := dynamicGitVersion.Load(); val != nil {
+		if version, ok := val.(string); ok && version != "" {
+			return version
+		}
+	}
+	return gitVersion
+}
+
 // Get 返回详尽的代码库版本信息，用来标明二进制文件由哪个版本的代码构建.
 func Get() Info {
 	// 以下变量通常由 -ldflags 进行设置
 	return Info{
 		ServiceName:  serviceName,
-		GitVersion:   gitVersion,
+		GitVersion:   getEffectiveVersion(), // 使用有效版本（考虑动态版本）
 		GitCommit:    gitCommit,
 		GitBranch:    gitBranch,
 		GitTreeState: gitTreeState,

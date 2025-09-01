@@ -34,14 +34,16 @@ func TestInfo_ToJSON(t *testing.T) {
 		GitVersion:   "v1.0.0",
 		GitCommit:    "abc123",
 		GitTreeState: "clean",
+		GitBranch:    "main",
 		BuildDate:    "2024-01-01T00:00:00Z",
+		ServiceName:  "test-service",
 		GoVersion:    "go1.20",
 		Compiler:     "gc",
 		Platform:     "linux/amd64",
 	}
 
 	// Expected JSON output
-	expectedJSON := `{"gitVersion":"v1.0.0","gitCommit":"abc123","gitTreeState":"clean","buildDate":"2024-01-01T00:00:00Z","goVersion":"go1.20","compiler":"gc","platform":"linux/amd64"}`
+	expectedJSON := `{"gitVersion":"v1.0.0","gitCommit":"abc123","gitTreeState":"clean","gitBranch":"main","buildDate":"2024-01-01T00:00:00Z","serviceName":"test-service","goVersion":"go1.20","compiler":"gc","platform":"linux/amd64"}`
 
 	// Test the ToJSON method
 	assert.JSONEq(t, expectedJSON, info.ToJSON())
@@ -52,7 +54,9 @@ func TestInfo_Text(t *testing.T) {
 		GitVersion:   "v1.0.0",
 		GitCommit:    "abc123",
 		GitTreeState: "clean",
+		GitBranch:    "main",
 		BuildDate:    "2024-01-01T00:00:00Z",
+		ServiceName:  "test-service",
 		GoVersion:    "go1.20",
 		Compiler:     "gc",
 		Platform:     "linux/amd64",
@@ -60,8 +64,10 @@ func TestInfo_Text(t *testing.T) {
 
 	// Test the Text method
 	stringOutput := info.Text()
+	assert.Contains(t, stringOutput, "serviceName: "+info.ServiceName)
 	assert.Contains(t, stringOutput, "gitVersion: "+info.GitVersion)
 	assert.Contains(t, stringOutput, "gitCommit: "+info.GitCommit)
+	assert.Contains(t, stringOutput, "gitBranch: "+info.GitBranch)
 	assert.Contains(t, stringOutput, "gitTreeState: "+info.GitTreeState)
 	assert.Contains(t, stringOutput, "buildDate: "+info.BuildDate)
 	assert.Contains(t, stringOutput, "goVersion: "+info.GoVersion)

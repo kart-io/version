@@ -1,6 +1,53 @@
 # Version 包文档
 
-`pkg/version` 包提供了一个全面的版本信息管理系统，支持构建时版本注入、运行时版本查询以及多种输出格式。这个包设计用于 Go 微服务架构，提供统一的版本管理和显示功能。
+`github.com/kart-io/version` 包提供了一个全面的版本信息管理系统，支持构建时版本注入、运行时版本查询以及多种输出格式。这个包设计用于 Go 微服务架构，提供统一的版本管理和显示功能。
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/kart-io/version)](https://goreportcard.com/report/github.com/kart-io/version)
+[![Go Reference](https://pkg.go.dev/badge/github.com/kart-io/version.svg)](https://pkg.go.dev/github.com/kart-io/version)
+
+## 快速开始
+
+### 安装
+
+```bash
+go get github.com/kart-io/version
+```
+
+### 基础使用
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/kart-io/version"
+)
+
+func main() {
+    info := version.Get()
+    fmt.Printf("Version: %s\n", info.String())
+    fmt.Printf("Details:\n%s\n", info.Text())
+}
+```
+
+### 开发命令
+
+```bash
+# 格式化代码
+make fmt
+
+# 运行测试
+make test
+
+# 运行测试并生成覆盖率报告
+make test-coverage
+
+# 运行所有检查
+make check
+
+# 查看所有可用命令
+make help
+```
 
 ## 目录
 
@@ -9,6 +56,7 @@
 - [核心特性](#核心特性)
 - [实现方式](#实现方式)
 - [使用指南](#使用指南)
+- [开发指南](#开发指南)
 - [最佳实践](#最佳实践)
 - [扩展机制](#扩展机制)
 
@@ -62,12 +110,20 @@ err := SetDynamicVersion("v1.2.3-hotfix.1")
 ### 文件组织
 
 ```
-pkg/version/
+github.com/kart-io/version/
 ├── doc.go          # 包文档和导入声明
 ├── version.go      # 核心版本信息结构和功能
 ├── dynamic.go      # 动态版本设置功能
 ├── flag.go         # 命令行标志支持
-└── version_test.go # 完整的单元测试
+├── semver.go       # 语义版本解析（无外部依赖）
+├── version_test.go # 核心功能单元测试
+├── semver_test.go  # 语义版本解析单元测试
+├── Makefile        # 开发任务自动化
+├── README.md       # 项目文档
+├── DESIGN.md       # 设计文档
+├── EXAMPLES.md     # 使用示例
+├── CLAUDE.md       # AI 助手配置
+└── go.mod          # Go 模块定义
 ```
 
 ### 数据流转
@@ -103,12 +159,18 @@ type Info struct {
 
 ```bash
 go build -ldflags "
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.serviceName=myservice'
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.gitVersion=v1.0.0'
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.gitCommit=abc12345'
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.gitBranch=main'
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+    -X 'github.com/kart-io/version.serviceName=myservice'
+    -X 'github.com/kart-io/version.gitVersion=v1.0.0'
+    -X 'github.com/kart-io/version.gitCommit=abc12345'
+    -X 'github.com/kart-io/version.gitBranch=main'
+    -X 'github.com/kart-io/version.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)'
 " ./cmd/myservice
+```
+
+或者使用提供的 Makefile：
+
+```bash
+make build
 ```
 
 ### 3. 动态版本管理
@@ -130,7 +192,7 @@ info := Get() // 返回动态设置的版本信息
 内置的命令行标志支持，集成到标准的 flag 解析流程：
 
 ```go
-import "github.com/costa92/go-protoc/v2/pkg/version"
+import "github.com/kart-io/version"
 
 func main() {
     // 注册版本标志
@@ -285,7 +347,7 @@ package main
 
 import (
     "fmt"
-    "github.com/costa92/go-protoc/v2/pkg/version"
+    "github.com/kart-io/version"
 )
 
 func main() {
@@ -312,7 +374,7 @@ import (
     "encoding/json"
     "net/http"
 
-    "github.com/costa92/go-protoc/v2/pkg/version"
+    "github.com/kart-io/version"
 )
 
 func versionHandler(w http.ResponseWriter, r *http.Request) {
@@ -343,7 +405,7 @@ import (
     "flag"
     "fmt"
 
-    "github.com/costa92/go-protoc/v2/pkg/version"
+    "github.com/kart-io/version"
     "github.com/spf13/pflag"
 )
 
@@ -385,7 +447,7 @@ import (
     "log"
     "os"
 
-    "github.com/costa92/go-protoc/v2/pkg/version"
+    "github.com/kart-io/version"
 )
 
 func main() {
@@ -409,24 +471,82 @@ func main() {
 package main
 
 import (
-    "github.com/costa92/go-protoc/v2/pkg/logger"
-    "github.com/costa92/go-protoc/v2/pkg/version"
+    "log"
+    "github.com/kart-io/version"
 )
 
 func main() {
     // 在日志中记录版本信息
     info := version.Get()
-    logger.Infow("Application starting",
-        "service", info.ServiceName,
-        "version", info.GitVersion,
-        "branch", info.GitBranch,
-        "commit", info.GitCommit[:8],
-        "build_date", info.BuildDate,
+    log.Printf("Application starting - service: %s, version: %s, branch: %s, commit: %.8s, build_date: %s",
+        info.ServiceName,
+        info.GitVersion,
+        info.GitBranch,
+        info.GitCommit,
+        info.BuildDate,
     )
 
     // 应用程序逻辑...
 }
 ```
+
+## 开发指南
+
+本项目提供了完整的 Makefile 来简化开发流程。
+
+### 开发命令
+
+```bash
+# 查看所有可用命令
+make help
+
+# 代码格式化
+make fmt
+
+# 代码检查
+make vet
+make lint
+
+# 运行测试
+make test                    # 基础测试
+make test-coverage          # 生成覆盖率报告
+make test-race              # 竞争检测
+
+# 构建验证
+make build                  # 构建验证
+
+# 依赖管理
+make deps                   # 下载依赖
+make deps-update           # 更新依赖
+
+# 综合检查
+make check                  # 运行格式化、检查和测试
+make ci                     # 完整 CI 流程
+
+# 清理
+make clean                  # 清理构建产物
+```
+
+### 代码贡献
+
+1. Fork 项目
+2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 创建 Pull Request
+
+### 测试要求
+
+- 新功能必须包含单元测试
+- 测试覆盖率应保持在 90% 以上
+- 所有测试必须通过
+- 代码必须通过 `make check` 验证
+
+### 文档要求
+
+- 公开函数和类型必须包含 godoc 注释
+- 重要变更需要更新 README.md
+- 新特性需要在 EXAMPLES.md 中添加示例
 
 ## 最佳实践
 
@@ -436,7 +556,7 @@ func main() {
 ```makefile
 # 版本信息变量
 SERVICE_NAME ?= myservice
-VERSION_PKG = github.com/costa92/go-protoc/v2/pkg/version
+VERSION_PKG = github.com/kart-io/version
 
 # Git 信息获取
 GIT_VERSION := $(shell git describe --tags --always --dirty)
@@ -491,11 +611,11 @@ jobs:
         DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
         go build -ldflags "
-          -X 'github.com/costa92/go-protoc/v2/pkg/version.serviceName=${SERVICE_NAME}'
-          -X 'github.com/costa92/go-protoc/v2/pkg/version.gitVersion=${VERSION}'
-          -X 'github.com/costa92/go-protoc/v2/pkg/version.gitCommit=${COMMIT}'
-          -X 'github.com/costa92/go-protoc/v2/pkg/version.gitBranch=${BRANCH}'
-          -X 'github.com/costa92/go-protoc/v2/pkg/version.buildDate=${DATE}'
+          -X 'github.com/kart-io/version.serviceName=${SERVICE_NAME}'
+          -X 'github.com/kart-io/version.gitVersion=${VERSION}'
+          -X 'github.com/kart-io/version.gitCommit=${COMMIT}'
+          -X 'github.com/kart-io/version.gitBranch=${BRANCH}'
+          -X 'github.com/kart-io/version.buildDate=${DATE}'
         " ./cmd/myservice
 ```
 
@@ -518,11 +638,11 @@ ARG BUILD_DATE
 
 # 构建带版本信息的二进制文件
 RUN go build -ldflags "\
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.serviceName=${SERVICE_NAME}' \
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.gitVersion=${VERSION}' \
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.gitCommit=${COMMIT}' \
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.gitBranch=${BRANCH}' \
-    -X 'github.com/costa92/go-protoc/v2/pkg/version.buildDate=${BUILD_DATE}' \
+    -X 'github.com/kart-io/version.serviceName=${SERVICE_NAME}' \
+    -X 'github.com/kart-io/version.gitVersion=${VERSION}' \
+    -X 'github.com/kart-io/version.gitCommit=${COMMIT}' \
+    -X 'github.com/kart-io/version.gitBranch=${BRANCH}' \
+    -X 'github.com/kart-io/version.buildDate=${BUILD_DATE}' \
     " -o myservice ./cmd/myservice
 
 # 运行阶段
@@ -545,7 +665,7 @@ package main
 
 import (
     "github.com/prometheus/client_golang/prometheus"
-    "github.com/costa92/go-protoc/v2/pkg/version"
+    "github.com/kart-io/version"
 )
 
 func init() {
@@ -580,7 +700,7 @@ import (
     "fmt"
     "strings"
 
-    "github.com/costa92/go-protoc/v2/pkg/version"
+    "github.com/kart-io/version"
 )
 
 func checkCompatibility() error {

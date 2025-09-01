@@ -3,8 +3,6 @@ package version
 import (
 	"fmt"
 	"sync/atomic"
-
-	utilversion "github.com/costa92/go-protoc/v2/pkg/util/version"
 )
 
 var dynamicGitVersion atomic.Value
@@ -39,17 +37,17 @@ func validateDynamicVersion(dynamicVersion, defaultVersion string) error {
 		// allow no-op
 		return nil
 	}
-	vRuntime, err := utilversion.ParseSemantic(dynamicVersion)
+	vRuntime, err := ParseSemantic(dynamicVersion)
 	if err != nil {
 		return err
 	}
 	// must match major/minor/patch of default version
-	var vDefault *utilversion.Version
+	var vDefault *SemVer
 	if defaultVersion == "v0.0.0-master+$Format:%H$" {
 		// special-case the placeholder value which doesn't parse as a semantic version
-		vDefault, err = utilversion.ParseSemantic("v0.0.0-master")
+		vDefault, err = ParseSemantic("v0.0.0-master")
 	} else {
-		vDefault, err = utilversion.ParseSemantic(defaultVersion)
+		vDefault, err = ParseSemantic(defaultVersion)
 	}
 	if err != nil {
 		return err
